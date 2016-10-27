@@ -1,0 +1,230 @@
+<project name="CoffeeMaker" default="compile" basedir=".">
+
+<!-- Configuration for cobertura -->
+    <path id="cobertura.classpath">
+        <fileset dir="lib">
+            <include name="cobertura-2.0.3.jar" />
+            <include name="cobertura-lib/**/*.jar" />
+        </fileset>
+    </path>
+    <taskdef classpathref="cobertura.classpath" resource="tasks.properties" />
+
+<!-- Target to clean up -->
+    <target name="clean" description="Clean">
+        <delete dir="bin"/>
+        <delete dir="gen-tests"/>
+        <delete dir=".instrumented"/>
+        <delete dir="reports"/>
+        <delete dir="evosuite-tests"/>
+        <delete dir="randoop-tests"/>
+        <delete dir="evosuite-report"/>
+        <delete>
+            <fileset dir="." includes="*.ser"/>
+        </delete>
+    </target>
+
+<!-- Target to initialize build -->
+    <target name="init">
+        <mkdir dir="bin"/>
+        <mkdir dir="gen-tests"/>
+        <mkdir dir="reports"/>
+    </target>
+
+<!-- Target to compile the project -->
+    <target name="compile" depends="init" description="Compile">
+        <javac includeantruntime="true"
+               srcdir="src"
+               destdir="bin"
+               source="1.7"
+               target="1.7"
+             compiler="javac1.7"
+               nowarn="true"
+                debug="yes">
+        </javac>
+    </target>
+
+<!-- Target to compile the test suite -->
+    <target name="compile.tests" depends="compile" description="Compile all tests">
+        <javac includeantruntime="true"
+               srcdir="test"
+              destdir="bin"
+               source="1.7"
+               target="1.7"
+             compiler="javac1.7"
+               nowarn="true"
+                debug="yes">
+                <classpath location="lib/junit-4.11.jar"/>
+        </javac>
+    </target>
+
+<!-- The original test target -->
+    <target name="test" depends="compile.tests" description="Run all unit test cases">
+        <echo message="Running unit tests ..."/>
+        <junit  printsummary="true"
+                  showoutput="true"
+                        fork="true"
+               haltonfailure="false">
+            <formatter type="plain" usefile="false"/>
+            <classpath path=".instrumented"/>
+            <classpath path="bin"/>
+            <classpath location="lib/junit-4.11.jar"/>
+            <classpath location="lib/cobertura-2.0.3.jar"/>
+
+            <batchtest fork="true">
+                <fileset dir="test">
+                    <include name="**/*.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+<!-- Coverage analysis -->
+    <target name="coverage" description="Run coverage analysis">
+        <antcall target="clean" />
+        <antcall target="compile" />
+        <cobertura-instrument failOnError="true" toDir=".instrumented">
+            <fileset dir="bin">
+                <include name="**/*.class"/>
+            </fileset>
+        </cobertura-instrument>
+
+        <antcall target="test" />
+        <mkdir dir="reports/manual" />
+        <cobertura-report format="html" destdir="reports/manual" srcdir="src" />
+
+        <cobertura-report format="summaryXml" destdir="reports/manual" srcdir="src" />
+        <concat>
+            <fileset dir="reports/manual" includes="coverage-summary.xml"/>
+            <filterchain>
+                <linecontains>
+                    <contains value="coverage line"/>
+                </linecontains>
+            </filterchain>
+        </concat>
+    </target>
+
+<!--
+##########################################################################################
+    Targets for generated test suites
+##########################################################################################
+-->
+    <target name="compile.tests.evosuite" depends="compile" description="Compile EvoSuite tests">
+        <mkdir dir="gen-tests/evosuite"/>
+        <javac includeantruntime="true"
+               srcdir="evosuite-tests"
+              destdir="gen-tests/evosuite"
+               nowarn="true"
+                debug="yes">
+                <classpath path="bin"/>
+                <classpath location="lib/junit-4.11.jar" />
+                <classpath location="lib/evosuite-1.0.3.jar" />
+        </javac>
+    </target>
+
+    <target name="compile.tests.randoop" depends="compile" description="Compile Randoop tests">
+        <mkdir dir="gen-tests/randoop"/>
+        <javac includeantruntime="true"
+               srcdir="randoop-tests"
+              destdir="gen-tests/randoop"
+               nowarn="true"
+                debug="yes">
+                <classpath path="bin"/>
+                <classpath location="lib/junit-4.11.jar" />
+        </javac>
+    </target>
+
+    <target name="test.evosuite" depends="compile.tests.evosuite" description="Run all EvoSuite test cases">
+        <echo message="Running unit tests ..."/>
+        <junit  printsummary="true"
+                  showoutput="true"
+                        fork="true"
+               haltonfailure="false">
+            <formatter type="plain" usefile="false"/>
+            <classpath path=".instrumented"/>
+            <classpath path="bin"/>
+            <classpath path="gen-tests/evosuite"/>
+            <classpath location="lib/junit-4.11.jar"/>
+            <classpath location="lib/cobertura-2.0.3.jar"/>
+            <classpath location="lib/evosuite-1.0.3.jar"/>
+
+            <batchtest fork="true">
+                <fileset dir="gen-tests/evosuite">
+                    <include name="**/*.class"/>
+                    <!-- Exclude EvoSuite's helper classes -->
+                    <exclude name="**/*_scaffolding.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="test.randoop" depends="compile.tests.randoop" description="Run all Randoop test cases">
+        <echo message="Running unit tests ..."/>
+        <junit  printsummary="true"
+                  showoutput="true"
+                        fork="true"
+               haltonfailure="false">
+            <formatter type="plain" usefile="false"/>
+            <classpath path=".instrumented"/>
+            <classpath path="bin"/>
+            <classpath path="gen-tests/randoop"/>
+            <classpath location="lib/junit-4.11.jar"/>
+            <classpath location="lib/cobertura-2.0.3.jar"/>
+
+            <batchtest fork="true">
+                <fileset dir="gen-tests/randoop">
+                    <include name="**/*.class"/>
+                    <!-- Exclude EvoSuite's helper classes -->
+                    <exclude name="**/*_scaffolding.class"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <target name="coverage.evosuite" description="Run coverage analysis">
+        <antcall target="clean" />
+        <antcall target="compile" />
+        <cobertura-instrument failOnError="true" toDir=".instrumented">
+            <fileset dir="bin">
+                <include name="**/*.class"/>
+            </fileset>
+        </cobertura-instrument>
+
+        <antcall target="test.evosuite" />
+        <mkdir dir="reports/evosuite" />
+        <cobertura-report format="html" destdir="reports/evosuite" srcdir="src" />
+
+        <cobertura-report format="summaryXml" destdir="reports/evosuite" srcdir="src" />
+        <concat>
+            <fileset dir="reports/evosuite" includes="coverage-summary.xml"/>
+            <filterchain>
+                <linecontains>
+                    <contains value="coverage line"/>
+                </linecontains>
+            </filterchain>
+        </concat>
+    </target>
+
+    <target name="coverage.randoop" description="Run coverage analysis">
+        <antcall target="clean" />
+        <antcall target="compile" />
+        <cobertura-instrument failOnError="true" toDir=".instrumented">
+            <fileset dir="bin">
+                <include name="**/*.class"/>
+            </fileset>
+        </cobertura-instrument>
+
+        <antcall target="test.randoop" />
+        <mkdir dir="reports/randoop" />
+        <cobertura-report format="html" destdir="reports/randoop" srcdir="src" />
+
+        <cobertura-report format="summaryXml" destdir="reports/randoop" srcdir="src" />
+        <concat>
+            <fileset dir="reports/randoop" includes="coverage-summary.xml"/>
+            <filterchain>
+                <linecontains>
+                    <contains value="coverage line"/>
+                </linecontains>
+            </filterchain>
+        </concat>
+    </target>
+</project>
