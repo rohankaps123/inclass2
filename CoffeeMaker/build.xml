@@ -15,9 +15,6 @@
         <delete dir="gen-tests"/>
         <delete dir=".instrumented"/>
         <delete dir="reports"/>
-        <delete dir="evosuite-tests"/>
-        <delete dir="randoop-tests"/>
-        <delete dir="evosuite-report"/>
         <delete>
             <fileset dir="." includes="*.ser"/>
         </delete>
