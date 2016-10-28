@@ -26,6 +26,19 @@ public void testUseIngredients() {
 The second fault is within addSugar() method in Inventory class. The addSugar method is only adding negative amount of sugar
 instead of positive amount. Hence, RecipeException will be thrown when a positive amount of sugar is passed into the method.
 
+@Test
+public void testAddSugar() {
+  Inventory inventory = new Inventory();
+  try{
+    inventory.addSugar("2");
+  }catch(InventoryException e){
+    // e.printStackTrace();
+    fail("InventoryException should not occur when adding positive sugar!");
+  }
+  int units = inventory.getSugar();
+  assertEquals(17, units);
+}
+
 2. Consider the faulty method that you identified, do the generated tests for this method pass or fail? Briefly explain why.
 
 3. What parts of the Inventory class are not covered by the generated tests? Briefly explain why these parts are challenging.
